@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Cadastro de Usuários</title>
+    <style>
+        body {
+            background-color: white;
+            font-family: monospace;
+        }
+
+        h1, h2 {
+            text-align: left;
+            color: black;
+        }
+
+        form {
+            border: 2px dashed red;
+            padding: 10px;
+            margin: 10px;
+        }
+
+        label {
+            display: inline;
+        }
+
+        input {
+            margin: 5px;
+        }
+
+        button {
+            margin-top: 10px;
+            background: gray;
+            color: white;
+            padding: 2px 5px;
+            border: 1px solid black;
+        }
+
+        table {
+            border: 3px solid black;
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid black;
+            padding: 3px;
+            text-align: left;
+        }
+
+        th {
+            background-color: yellow;
+        }
+
+        td {
+            background-color: #ddd;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Cadastro</h1>
+
+<form id="usuarioForm" th:action="@{/usuarios}" th:object="${usuarioModel}" method="post">
+    <label>Nome:</label>
+    <input type="text" th:field="*{nomeUsuario}" /><br>
+
+    <label>RG:</label>
+    <input type="text" th:field="*{rg}" /><br>
+
+    <label>CPF:</label>
+    <input type="text" th:field="*{cpf}" /><br>
+
+    <label>Nome da Mãe:</label>
+    <input type="text" th:field="*{nomeMae}" /><br>
+
+    <button type="submit" id="salvarUsuario">Salvar</button>
+</form>
+
+<h2>Lista de Usuários</h2>
+
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Nome</th>
+        <th>RG</th>
+        <th>CPF</th>
+        <th>Nome da Mãe</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="usuario : ${usuarios}">
+        <td th:text="${usuario.id}"></td>
+        <td th:text="${usuario.nomeUsuario}"></td>
+        <td th:text="${usuario.rg}"></td>
+        <td th:text="${usuario.cpf}"></td>
+        <td th:text="${usuario.nomeMae}"></td>
+    </tr>
+    </tbody>
+</table>
+
+<script>
+    document.getElementById("usuarioForm").addEventListener("submit", function(event) {
+        event.preventDefault();
+        var form = event.target;
+        var formData = new FormData(form);
+
+        fetch(form.action, {
+            method: form.method,
+            body: formData
+        }).then(response => {
+            if (response.ok) {
+                window.location.href = "/usuarios/pesquisa";
+                alert("Salvo com sucesso");
+            } else {
+                alert("Erro ao salvar");
+            }
+        }).catch(error => {
+            alert("Erro");
+        });
+    });
+</script>
+
+</body>
+</html>
