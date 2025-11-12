@@ -7,7 +7,6 @@ import com.finan.orcamento.service.ClienteService;
 import com.finan.orcamento.service.OrcamentoService;
 import com.finan.orcamento.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -29,11 +28,17 @@ public class OrcamentoController {
     private OrcamentoService orcamentoService;
 
     @GetMapping
-    public String getOrcamentoPage(Model model, @RequestParam(required = false) String error) {
+    public String getOrcamentoPage(Model model, @RequestParam(required = false) String error,
+                                   @RequestParam(required = false) String success,
+                                   @RequestParam(required = false) String message) {
         model.addAttribute("newOrcamento", new OrcamentoModel());
         model.addAttribute("orcamentos", orcamentoService.buscarCadastro());
         if ("true".equals(error)) {
-            model.addAttribute("errorMessage", "Erro ao salvar orçamento. Tente novamente.");
+            String errorMsg = message != null ? message : "Erro ao salvar orçamento. Tente novamente.";
+            model.addAttribute("errorMessage", errorMsg);
+        }
+        if ("true".equals(success)) {
+            model.addAttribute("successMessage", "Orçamento salvo com sucesso!");
         }
         return "orcamentoPage";
     }
@@ -58,36 +63,38 @@ public class OrcamentoController {
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     public String cadastraOrcamento(@RequestParam(required = false) Long idUsuario,
                                    @RequestParam(required = false) Long idCliente,
                                    @ModelAttribute OrcamentoModel orcamentoModel) {
         try {
-            System.out.println("=== CADASTRANDO ORÇAMENTO ===");
-            System.out.println("ID Usuário: " + idUsuario);
-            System.out.println("ID Cliente: " + idCliente);
-            System.out.println("Valor Orçamento: " + orcamentoModel.getValorOrcamento());
-            System.out.println("ICMS Estado: " + orcamentoModel.getIcmsEstados());
+            // Validação: Cliente é obrigatório
+            if (idCliente == null) {
+                return "redirect:/orcamentos?error=true";
+            }
+            
+            // Validação: Valor é obrigatório
+            if (orcamentoModel.getValorOrcamento() == null || orcamentoModel.getValorOrcamento().doubleValue() <= 0) {
+                return "redirect:/orcamentos?error=true";
+            }
+            
+            // Validação: Estado é obrigatório
+            if (orcamentoModel.getIcmsEstados() == null) {
+                return "redirect:/orcamentos?error=true";
+            }
             
             if (idUsuario != null) {
                 UsuarioModel usuario = usuarioService.buscaId(idUsuario);
                 orcamentoModel.setUsuario(usuario);
             }
             
-            if (idCliente != null) {
-                ClienteModel cliente = clienteService.buscaId(idCliente);
-                orcamentoModel.setCliente(cliente);
-            }
+            ClienteModel cliente = clienteService.buscaId(idCliente);
+            orcamentoModel.setCliente(cliente);
             
             orcamentoModel.calcularIcms();
             
-            System.out.println("Valor ICMS calculado: " + orcamentoModel.getValorICMS());
+            orcamentoService.cadastrarOrcamento(orcamentoModel);
             
-            OrcamentoModel orcamentoSalvo = orcamentoService.cadastrarOrcamento(orcamentoModel);
-            System.out.println("Orçamento salvo com ID: " + orcamentoSalvo.getId());
-            System.out.println("Redirecionando para /orcamentos/success");
-            
-            return "redirect:/orcamentos/success";
+            return "redirect:/orcamentos?success=true";
         } catch (Exception e) {
             System.err.println("ERRO ao cadastrar orçamento: " + e.getMessage());
             e.printStackTrace();

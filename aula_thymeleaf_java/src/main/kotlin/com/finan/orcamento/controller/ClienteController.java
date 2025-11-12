@@ -4,7 +4,6 @@ import com.finan.orcamento.model.ClienteModel;
 import com.finan.orcamento.repositories.ClienteRepository;
 import com.finan.orcamento.service.ClienteService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -22,18 +21,37 @@ public class ClienteController {
     private ClienteRepository clienteRepository;
 
     @GetMapping
-    public String getClientePage(Model model) {
+    public String getClientePage(Model model, @RequestParam(required = false) String success, 
+                                 @RequestParam(required = false) String error,
+                                 @RequestParam(required = false) String message) {
         List<ClienteModel> clientes = clienteService.buscarCliente();
         model.addAttribute("clientes", clientes);
         model.addAttribute("clienteModel", new ClienteModel());
+        if ("true".equals(success)) {
+            model.addAttribute("successMessage", "Cliente salvo com sucesso!");
+        }
+        if ("true".equals(error)) {
+            String errorMsg = message != null ? message : "Erro ao salvar cliente. Tente novamente.";
+            model.addAttribute("errorMessage", errorMsg);
+        }
         return "clientePage";
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     public String cadastraCliente(@ModelAttribute ClienteModel clienteModel) {
-        clienteService.cadastrarCliente(clienteModel);
-        return "redirect:/clientes/pesquisa";
+        try {
+            if (clienteModel.getNome() == null || clienteModel.getNome().trim().isEmpty()) {
+                return "redirect:/clientes?error=true&message=Nome é obrigatório";
+            }
+            if (clienteModel.getCpf() == null || clienteModel.getCpf().trim().isEmpty()) {
+                return "redirect:/clientes?error=true&message=CPF é obrigatório";
+            }
+            clienteService.cadastrarCliente(clienteModel);
+            return "redirect:/clientes?success=true";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "redirect:/clientes?error=true";
+        }
     }
 
     @GetMapping("/pesquisa")
@@ -55,8 +73,12 @@ public class ClienteController {
 
     @PostMapping("/{id}")
     public String atualizaCliente(@PathVariable Long id, @ModelAttribute ClienteModel clienteModel) {
-        clienteService.atualizaCliente(clienteModel, id);
-        return "redirect:/clientes/pesquisa";
+        try {
+            clienteService.atualizaCliente(clienteModel, id);
+            return "redirect:/clientes?success=true";
+        } catch (Exception e) {
+            return "redirect:/clientes?error=true";
+        }
     }
 
     @DeleteMapping("/{id}")

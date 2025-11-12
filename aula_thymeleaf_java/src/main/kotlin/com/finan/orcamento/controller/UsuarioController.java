@@ -4,7 +4,6 @@ import com.finan.orcamento.model.UsuarioModel;
 import com.finan.orcamento.repositories.UsuarioRepository;
 import com.finan.orcamento.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -20,18 +19,34 @@ public class UsuarioController {
     private UsuarioRepository usuarioRepository;
 
     @GetMapping
-    public String getUsuarioPage(Model model) {
+    public String getUsuarioPage(Model model, @RequestParam(required = false) String success,
+                                 @RequestParam(required = false) String error,
+                                 @RequestParam(required = false) String message) {
         List<UsuarioModel> usuarios = usuarioService.buscarUsuario();
         model.addAttribute("usuarios", usuarios);
         model.addAttribute("usuarioModel", new UsuarioModel());
+        if ("true".equals(success)) {
+            model.addAttribute("successMessage", "Usuário salvo com sucesso!");
+        }
+        if ("true".equals(error)) {
+            String errorMsg = message != null ? message : "Erro ao salvar usuário. Tente novamente.";
+            model.addAttribute("errorMessage", errorMsg);
+        }
         return "usuarioPage";
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     public String cadastraUsuario(@ModelAttribute UsuarioModel usuarioModel) {
-        usuarioService.cadastrarUsuario(usuarioModel);
-        return "redirect:/usuarios/pesquisa";
+        try {
+            if (usuarioModel.getNomeUsuario() == null || usuarioModel.getNomeUsuario().trim().isEmpty()) {
+                return "redirect:/usuarios?error=true";
+            }
+            usuarioService.cadastrarUsuario(usuarioModel);
+            return "redirect:/usuarios?success=true";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "redirect:/usuarios?error=true";
+        }
     }
 
     @GetMapping("pesquisa")
