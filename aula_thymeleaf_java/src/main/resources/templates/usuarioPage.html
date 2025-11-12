@@ -91,7 +91,10 @@
     </tr>
     </thead>
     <tbody>
-    <tr th:each="usuario : ${usuarios}">
+    <tr th:if="${usuarios == null or usuarios.empty}">
+        <td colspan="5" class="text-center text-muted">Nenhum usuário cadastrado</td>
+    </tr>
+    <tr th:if="${usuarios != null and !usuarios.empty}" th:each="usuario : ${usuarios}">
         <td th:text="${usuario.id}"></td>
         <td th:text="${usuario.nomeUsuario}"></td>
         <td th:text="${usuario.rg}"></td>
@@ -102,25 +105,7 @@
 </table>
 
 <script>
-    document.getElementById("usuarioForm").addEventListener("submit", function(event) {
-        event.preventDefault();
-        var form = event.target;
-        var formData = new FormData(form);
-
-        fetch(form.action, {
-            method: form.method,
-            body: formData
-        }).then(response => {
-            if (response.ok) {
-                window.location.href = "/usuarios/pesquisa";
-                alert("Salvo com sucesso");
-            } else {
-                alert("Erro ao salvar");
-            }
-        }).catch(error => {
-            alert("Erro");
-        });
-    });
+    // Formulário já faz submit normal, não precisa interceptar
 </script>
 
 </body>

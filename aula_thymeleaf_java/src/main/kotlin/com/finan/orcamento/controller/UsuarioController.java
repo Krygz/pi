@@ -5,7 +5,6 @@ import com.finan.orcamento.repositories.UsuarioRepository;
 import com.finan.orcamento.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -22,14 +21,17 @@ public class UsuarioController {
 
     @GetMapping
     public String getUsuarioPage(Model model) {
+        List<UsuarioModel> usuarios = usuarioService.buscarUsuario();
+        model.addAttribute("usuarios", usuarios);
         model.addAttribute("usuarioModel", new UsuarioModel());
         return "usuarioPage";
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<UsuarioModel> cadastraUsuario(@ModelAttribute UsuarioModel usuarioModel) {
-        return ResponseEntity.ok(usuarioService.cadastrarUsuario(usuarioModel));
+    public String cadastraUsuario(@ModelAttribute UsuarioModel usuarioModel) {
+        usuarioService.cadastrarUsuario(usuarioModel);
+        return "redirect:/usuarios/pesquisa";
     }
 
     @GetMapping("pesquisa")

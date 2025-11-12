@@ -34,6 +34,7 @@
                 <h4 class="mb-0">Orçamentos</h4>
                 <div>
                     <a href="/usuarios" class="btn btn-outline-secondary btn-minimal me-2">Usuários</a>
+                    <a href="/clientes" class="btn btn-outline-secondary btn-minimal me-2">Clientes</a>
                     <a href="/orcamentos/database" class="btn btn-outline-info btn-minimal me-2">Banco</a>
                     <button type="button" class="btn btn-primary btn-minimal" data-bs-toggle="modal" data-bs-target="#addModal">
                         Novo Orçamento
@@ -51,29 +52,30 @@
 
         <!-- Lista -->
         <div class="row">
-            <div th:if="${orcamentos != null and !orcamentos.empty}">
-                <div th:each="orcamento : ${orcamentos}" class="col-12 col-md-6 col-lg-4 mb-3">
-                    <div class="simple-card p-3">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h6 class="mb-0" th:text="${orcamento.usuario.nomeUsuario}">Usuário</h6>
-                            <small class="text-muted" th:text="${orcamento.icmsEstados}">Estado</small>
-                        </div>
-                        <div class="mb-2">
-                            <strong>R$ <span th:text="${#numbers.formatDecimal(orcamento.valorOrcamento, 1, 2)}">0,00</span></strong>
-                        </div>
-                        <div class="text-muted small mb-2">
-                            ICMS: R$ <span th:text="${#numbers.formatDecimal(orcamento.valorICMS, 1, 2)}">0,00</span>
-                        </div>
-                        <div class="d-flex gap-1">
-                            <button class="btn btn-sm btn-outline-primary" th:onclick="'editar(' + ${orcamento.id} + ')'">Editar</button>
-                            <button class="btn btn-sm btn-outline-danger" th:onclick="'excluir(' + ${orcamento.id} + ')'">Excluir</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
             <div th:if="${orcamentos == null or orcamentos.empty}" class="col-12">
                 <div class="text-center py-5">
                     <p class="text-muted">Nenhum orçamento cadastrado</p>
+                </div>
+            </div>
+            <div th:if="${orcamentos != null and !orcamentos.empty}" th:each="orcamento : ${orcamentos}" class="col-12 col-md-6 col-lg-4 mb-3">
+                <div class="simple-card p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h6 class="mb-0" th:if="${orcamento.cliente != null}" th:text="'Cliente: ' + ${orcamento.cliente.nome}">Cliente</h6>
+                            <h6 class="mb-0" th:if="${orcamento.usuario != null}" th:text="'Usuário: ' + ${orcamento.usuario.nomeUsuario}">Usuário</h6>
+                        </div>
+                        <small class="text-muted" th:text="${orcamento.icmsEstados}">Estado</small>
+                    </div>
+                    <div class="mb-2">
+                        <strong>R$ <span th:text="${#numbers.formatDecimal(orcamento.valorOrcamento, 1, 2)}">0,00</span></strong>
+                    </div>
+                    <div class="text-muted small mb-2">
+                        ICMS: R$ <span th:text="${#numbers.formatDecimal(orcamento.valorICMS, 1, 2)}">0,00</span>
+                    </div>
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-sm btn-outline-primary" th:onclick="'editar(' + ${orcamento.id} + ')'">Editar</button>
+                        <button class="btn btn-sm btn-outline-danger" th:onclick="'excluir(' + ${orcamento.id} + ')'">Excluir</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -90,9 +92,21 @@
                 
                 <form th:action="@{/orcamentos}" th:object="${newOrcamento}" method="post">
                     <div class="modal-body">
-                        <!-- Usuário -->
+                        <!-- Cliente -->
                         <div class="mb-3">
-                            <label class="form-label">Usuário</label>
+                            <label class="form-label">Cliente (Nome ou CPF)</label>
+                            <div class="input-group">
+                                <input type="text" id="searchClienteTerm" class="form-control" placeholder="Digite nome ou CPF do cliente">
+                                <button type="button" id="searchClienteBtn" class="btn btn-outline-secondary">Buscar</button>
+                            </div>
+                            <div id="clienteResults" class="mt-2"></div>
+                            <div id="clienteSelected" class="mt-2"></div>
+                            <input type="hidden" id="clienteId" name="idCliente" />
+                        </div>
+
+                        <!-- Usuário (opcional) -->
+                        <div class="mb-3">
+                            <label class="form-label">Usuário (opcional)</label>
                             <div class="input-group">
                                 <input type="text" id="searchTerm" class="form-control" placeholder="Nome do usuário">
                                 <button type="button" id="searchBtn" class="btn btn-outline-secondary">Buscar</button>
@@ -157,7 +171,7 @@
                     }
                     $('#results').html(html);
 
-                    $('[data-id]').click(function() {
+                    $('#results [data-id]').click(function() {
                         var id = $(this).data('id');
                         var name = $(this).text();
                         $('#selected').html('<div class="alert alert-success">Usuário: ' + name + '</div>');
@@ -191,21 +205,59 @@
                 checkForm();
             });
 
+            // Buscar clientes
+            $('#searchClienteBtn').click(function() {
+                var term = $('#searchClienteTerm').val().trim();
+                if (term.length < 2) {
+                    alert('Digite pelo menos 2 caracteres');
+                    return;
+                }
+                
+                $.get('/orcamentos/clientes/search', { searchTerm: term }, function(data) {
+                    var html = '';
+                    if (data.length === 0) {
+                        html = '<div class="alert alert-warning">Nenhum cliente encontrado</div>';
+                    } else {
+                        data.forEach(function(cliente) {
+                            html += '<div class="p-2 border rounded mb-1" style="cursor: pointer;" data-id="' + cliente.id + '" data-nome="' + cliente.nome + '" data-cpf="' + cliente.cpf + '">' + 
+                                    '<strong>' + cliente.nome + '</strong> - CPF: ' + cliente.cpf + '</div>';
+                        });
+                    }
+                    $('#clienteResults').html(html);
+
+                    $('#clienteResults [data-id]').click(function() {
+                        var id = $(this).data('id');
+                        var nome = $(this).data('nome');
+                        var cpf = $(this).data('cpf');
+                        $('#clienteSelected').html('<div class="alert alert-success">Cliente: ' + nome + ' (CPF: ' + cpf + ')</div>');
+                        $('#clienteId').val(id);
+                        $('#clienteResults').empty();
+                        checkForm();
+                    });
+                });
+            });
+
             // Verificar formulário
             function checkForm() {
+                var cliente = $('#clienteId').val();
                 var user = $('#userId').val();
                 var valor = $('input[name="valorOrcamento"]').val();
                 var estado = $('select[name="icmsEstados"]').val();
                 
-                $('#submitBtn').prop('disabled', !(user && valor && estado));
+                // Cliente é obrigatório, usuário é opcional
+                $('#submitBtn').prop('disabled', !(cliente && valor && estado));
             }
 
             // Limpar modal
             $('#addModal').on('hidden.bs.modal', function() {
                 $('#searchTerm').val('');
+                $('#searchClienteTerm').val('');
                 $('#results').empty();
+                $('#clienteResults').empty();
                 $('#selected').empty();
+                $('#clienteSelected').empty();
                 $('#userId').val('');
+                $('#clienteId').val('');
                 $('#preview').hide();
                 $('#submitBtn').prop('disabled', true);
             });

@@ -1,12 +1,10 @@
 package com.finan.orcamento.service;
 
 import com.finan.orcamento.model.OrcamentoModel;
-import com.finan.orcamento.model.UsuarioModel;
 import com.finan.orcamento.repositories.OrcamentoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 

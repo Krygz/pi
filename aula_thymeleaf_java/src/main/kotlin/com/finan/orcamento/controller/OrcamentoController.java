@@ -1,7 +1,9 @@
 package com.finan.orcamento.controller;
 
+import com.finan.orcamento.model.ClienteModel;
 import com.finan.orcamento.model.OrcamentoModel;
 import com.finan.orcamento.model.UsuarioModel;
+import com.finan.orcamento.service.ClienteService;
 import com.finan.orcamento.service.OrcamentoService;
 import com.finan.orcamento.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,9 @@ public class OrcamentoController {
 
     @Autowired
     private UsuarioService usuarioService;
+
+    @Autowired
+    private ClienteService clienteService;
 
     @Autowired
     private OrcamentoService orcamentoService;
@@ -54,16 +59,26 @@ public class OrcamentoController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public String cadastraOrcamento(@RequestParam Long idUsuario,
+    public String cadastraOrcamento(@RequestParam(required = false) Long idUsuario,
+                                   @RequestParam(required = false) Long idCliente,
                                    @ModelAttribute OrcamentoModel orcamentoModel) {
         try {
             System.out.println("=== CADASTRANDO ORÇAMENTO ===");
             System.out.println("ID Usuário: " + idUsuario);
+            System.out.println("ID Cliente: " + idCliente);
             System.out.println("Valor Orçamento: " + orcamentoModel.getValorOrcamento());
             System.out.println("ICMS Estado: " + orcamentoModel.getIcmsEstados());
             
-            UsuarioModel usuario = usuarioService.buscaId(idUsuario);
-            orcamentoModel.setUsuario(usuario);
+            if (idUsuario != null) {
+                UsuarioModel usuario = usuarioService.buscaId(idUsuario);
+                orcamentoModel.setUsuario(usuario);
+            }
+            
+            if (idCliente != null) {
+                ClienteModel cliente = clienteService.buscaId(idCliente);
+                orcamentoModel.setCliente(cliente);
+            }
+            
             orcamentoModel.calcularIcms();
             
             System.out.println("Valor ICMS calculado: " + orcamentoModel.getValorICMS());
@@ -78,6 +93,18 @@ public class OrcamentoController {
             e.printStackTrace();
             return "redirect:/orcamentos?error=true";
         }
+    }
+
+    @GetMapping("/clientes/search")
+    @ResponseBody
+    public List<ClienteModel> searchClientes(@RequestParam String searchTerm) {
+        // Busca por nome ou CPF
+        List<ClienteModel> porNome = clienteService.buscarPorNome(searchTerm);
+        List<ClienteModel> porCpf = clienteService.buscarPorCpf(searchTerm);
+        
+        // Combina resultados e remove duplicatas
+        porNome.addAll(porCpf);
+        return porNome.stream().distinct().toList();
     }
 
     @GetMapping("/success")

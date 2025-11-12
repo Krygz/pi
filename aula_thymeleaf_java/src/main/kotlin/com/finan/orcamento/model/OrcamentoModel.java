@@ -2,9 +2,6 @@ package com.finan.orcamento.model;
 
 import com.finan.orcamento.model.enums.IcmsEstados;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
@@ -31,6 +28,10 @@ public class OrcamentoModel implements Serializable {
     @ManyToOne
     @JoinColumn(name="usuario_id", referencedColumnName = "id")
     private UsuarioModel usuario;
+
+    @ManyToOne
+    @JoinColumn(name="cliente_id", referencedColumnName = "id")
+    private ClienteModel cliente;
 
     public void calcularIcms() {
         this.valorICMS = this.icmsEstados.getStrategy().calcular(this.valorOrcamento);
@@ -84,6 +85,14 @@ public class OrcamentoModel implements Serializable {
 
     public void setUsuario(UsuarioModel usuario) {
         this.usuario = usuario;
+    }
+
+    public ClienteModel getCliente() {
+        return cliente;
+    }
+
+    public void setCliente(ClienteModel cliente) {
+        this.cliente = cliente;
     }
 
     @Override

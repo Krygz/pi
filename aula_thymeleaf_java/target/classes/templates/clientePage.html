@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Cadastro de Clientes</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .simple-header {
+            background: white;
+            border-bottom: 1px solid #dee2e6;
+            padding: 1rem 0;
+        }
+        .simple-card {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            background: white;
+        }
+        .btn-minimal {
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        table {
+            border: 1px solid #dee2e6;
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="simple-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Clientes</h4>
+                <div>
+                    <a href="/usuarios" class="btn btn-outline-secondary btn-minimal me-2">Usuários</a>
+                    <a href="/orcamentos" class="btn btn-outline-primary btn-minimal me-2">Orçamentos</a>
+                    <button type="button" class="btn btn-primary btn-minimal" data-bs-toggle="modal" data-bs-target="#addModal">
+                        Novo Cliente
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-4">
+        <h2>Lista de Clientes</h2>
+
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>CPF</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:if="${clientes == null or clientes.empty}">
+                    <td colspan="4" class="text-center text-muted">Nenhum cliente cadastrado</td>
+                </tr>
+                <tr th:if="${clientes != null and !clientes.empty}" th:each="cliente : ${clientes}">
+                    <td th:text="${cliente.id}"></td>
+                    <td th:text="${cliente.nome}"></td>
+                    <td th:text="${cliente.cpf}"></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" th:onclick="'editar(' + ${cliente.id} + ')'">Editar</button>
+                        <button class="btn btn-sm btn-outline-danger" th:onclick="'excluir(' + ${cliente.id} + ')'">Excluir</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal Adicionar/Editar -->
+    <div class="modal fade" id="addModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Novo Cliente</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                
+                <form id="clienteForm" th:action="@{/clientes}" th:object="${clienteModel}" method="post">
+                    <input type="hidden" id="clienteId" name="id" th:value="${clienteModel?.id}" />
+                    <input type="hidden" id="formAction" name="formAction" value="create" />
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Nome</label>
+                            <input type="text" id="nome" name="nome" th:field="*{nome}" class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">CPF</label>
+                            <input type="text" id="cpf" name="cpf" th:field="*{cpf}" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:inline="javascript">
+        // Preencher formulário se houver cliente para edição
+        document.addEventListener('DOMContentLoaded', function() {
+            var clienteId = document.getElementById("clienteId");
+            if (clienteId && clienteId.value && clienteId.value !== '' && clienteId.value !== 'null') {
+                document.getElementById("modalTitle").textContent = "Editar Cliente";
+                var modal = new bootstrap.Modal(document.getElementById("addModal"));
+                modal.show();
+            }
+        });
+
+        document.getElementById("clienteForm").addEventListener("submit", function(event) {
+            var clienteId = document.getElementById("clienteId").value;
+            if (clienteId && clienteId !== '' && clienteId !== 'null') {
+                // Se tem ID, muda a action para atualização
+                event.target.action = "/clientes/" + clienteId;
+            }
+            // Deixa o submit normal acontecer
+        });
+
+        function editar(id) {
+            // Redireciona para a página de edição
+            window.location.href = "/clientes/" + id;
+        }
+
+        function excluir(id) {
+            if (confirm('Tem certeza que deseja excluir este cliente?')) {
+                fetch("/clientes/" + id, {
+                    method: "DELETE"
+                }).then(response => {
+                    if (response.ok) {
+                        window.location.href = "/clientes/pesquisa";
+                    } else {
+                        alert("Erro ao excluir");
+                    }
+                }).catch(error => {
+                    alert("Erro: " + error);
+                });
+            }
+        }
+
+        // Limpar modal ao fechar
+        document.getElementById("addModal").addEventListener("hidden.bs.modal", function() {
+            document.getElementById("clienteForm").reset();
+            document.getElementById("clienteId").value = "";
+            document.getElementById("modalTitle").textContent = "Novo Cliente";
+        });
+    </script>
+</body>
+</html>
+
